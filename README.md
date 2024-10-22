@@ -2,7 +2,7 @@
 Contributors: Connor Mattson, Jeremy Clark, Daniel S. Brown
 
 ## Required Software
-- Python >3.9 & Pip
+- Python >3.9 & Pip; Python 3.13.0 doesnt support but 3.10.11 works. 
 - External Python Packages as defined in [requirements.txt](requirements.txt) 
 
 ## Setup
