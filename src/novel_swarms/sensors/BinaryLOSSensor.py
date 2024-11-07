@@ -3,6 +3,9 @@ import numpy as np
 import math
 from .AbstractSensor import AbstractSensor
 from typing import List
+from datetime import datetime
+import os
+import csv
 
 
 class BinaryLOSSensor(AbstractSensor):
@@ -14,6 +17,25 @@ class BinaryLOSSensor(AbstractSensor):
         self.hist_len = history_length
         self.width = width
         self.show = draw
+        # Set the CSV file path relative to the repo's root
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
+        sensor_data_dir = os.path.join(repo_root, 'SensorData')
+        os.makedirs(sensor_data_dir, exist_ok=True)  # Create the directory if it doesn't exist
+        self.csv_file = os.path.join(sensor_data_dir, 'BinaryLOSsensorData.csv')
+        self._initialize_csv()
+
+    def _initialize_csv(self):
+        """Initializes the CSV file with headers if it doesn't already exist."""
+        if not os.path.exists(self.csv_file):
+            with open(self.csv_file, mode='w', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(["timestamp", "sensor_value","BotName"])
+
+    def log_to_csv(self, sensor_value):
+        """Logs the timestamp and sensor value to a CSV file."""
+        with open(self.csv_file, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([datetime.now().isoformat(), sensor_value,self.parent.name])
 
     def checkForLOSCollisions(self, world) -> None:
         sensor_position = self.parent.getPosition()
@@ -30,6 +52,7 @@ class BinaryLOSSensor(AbstractSensor):
                 self.parent.agent_in_sight = agent
                 self.current_state = 1
                 self.add_to_history(self.current_state)
+                self.log_to_csv(self.current_state)
                 return
 
         for agent in world.population:
@@ -37,11 +60,13 @@ class BinaryLOSSensor(AbstractSensor):
                 self.parent.agent_in_sight = agent
                 self.current_state = 1
                 self.add_to_history(self.current_state)
+                self.log_to_csv(self.current_state)
                 return
 
         self.parent.agent_in_sight = None
         self.current_state = 0
         self.add_to_history(self.current_state)
+        self.log_to_csv(self.current_state)
 
     def agent_in_sight(self, agent, p_0, d_hat):
         if agent == self.parent:
