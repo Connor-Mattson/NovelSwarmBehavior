@@ -3,7 +3,7 @@ import numpy as np
 import math
 from .AbstractSensor import AbstractSensor
 from typing import List
-from datetime import datetime
+from datetime import datetime,timedelta
 import os
 import csv
 
@@ -17,6 +17,7 @@ class BinaryLOSSensor(AbstractSensor):
         self.hist_len = history_length
         self.width = width
         self.show = draw
+        self.start_time = datetime.now()
         # Set the CSV file path relative to the repo's root
         repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..'))
         sensor_data_dir = os.path.join(repo_root, 'SensorData')
@@ -29,13 +30,23 @@ class BinaryLOSSensor(AbstractSensor):
         if not os.path.exists(self.csv_file):
             with open(self.csv_file, mode='w', newline='') as file:
                 writer = csv.writer(file)
-                writer.writerow(["timestamp", "sensor_value","BotName"])
+                writer.writerow([ "Time Stamp","BotName","LOS_sensor_value","bot speed_x","bot speed_y","Pattern"])
 
     def log_to_csv(self, sensor_value):
-        """Logs the timestamp and sensor value to a CSV file."""
-        with open(self.csv_file, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow([datetime.now().isoformat(), sensor_value,self.parent.name])
+        """Logs the values to a CSV file only if 10 seconds have passed since start."""
+        current_time = datetime.now()
+        if current_time - self.start_time >= timedelta(seconds=10):  # Check if 10 seconds have passed
+            with open(self.csv_file, mode='a', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow([current_time.isoformat(), self.parent.name, sensor_value, self.parent.getVelocity()[0], self.parent.getVelocity()[1], 2])
+        
+
+    # def log_to_csv(self, sensor_value):
+    #     """Logs the values to a CSV file."""
+    #     with open(self.csv_file, mode='a', newline='') as file:
+    #         writer = csv.writer(file)
+    #         writer.writerow([datetime.now().isoformat(),self.parent.name, sensor_value,self.parent.getVelocity()[0],self.parent.getVelocity()[1], 0 ])
+
 
     def checkForLOSCollisions(self, world) -> None:
         sensor_position = self.parent.getPosition()
@@ -44,6 +55,7 @@ class BinaryLOSSensor(AbstractSensor):
         p_0 = np.array(sensor_position)
         d = np.array(self.getLOSVector())
         d_hat = d / np.linalg.norm(d)
+
 
         # Check seen agent from last frame first, to avoid expensive computation
         if self.parent.agent_in_sight is not None and not self.parent.agent_in_sight.deleted:
